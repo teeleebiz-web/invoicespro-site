@@ -35,6 +35,11 @@
     .msg.ok { background: #E8F5EC; color: var(--green); }
     .msg.err { background: #FBEAE8; color: var(--red); }
     .msg.info { background: var(--card-alt); color: var(--text-mid); }
+    .resend-row { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border-light); }
+    .resend-hint { font-size: 13px; color: var(--text-mute); margin-bottom: 12px; }
+    .resend-btn { background: none; border: 1.5px solid var(--clay); color: var(--clay); padding: 10px 20px; border-radius: 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .resend-btn:hover:not(:disabled) { background: var(--card-alt); }
+    .resend-btn:disabled { opacity: 0.5; cursor: default; border-color: var(--border); color: var(--text-mute); }
 
     /* Dashboard */
     .dash { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; display: none; }
@@ -80,6 +85,10 @@
     <input type="email" id="emailInput" placeholder="you@email.com" autocomplete="email" />
     <button class="primary" id="sendBtn" onclick="sendLink()">Send my secure link</button>
     <div class="msg" id="loginMsg"></div>
+    <div class="resend-row" id="resendRow" style="display:none;">
+      <p class="resend-hint">Didn't get it? Check your spam or junk folder — it can take a minute to arrive.</p>
+      <button class="resend-btn" id="resendBtn" onclick="sendLink(true)">Resend my link</button>
+    </div>
   </div>
   <p class="footer-note">No password needed. The link goes straight to your inbox.</p>
 </div>
@@ -117,7 +126,27 @@
     el.className = 'msg show ' + kind;
   }
 
-  async function sendLink() {
+  let resendTimer = null;
+
+  function startCooldown(seconds) {
+    const rBtn = document.getElementById('resendBtn');
+    let left = seconds;
+    rBtn.disabled = true;
+    rBtn.textContent = `Resend in ${left}s`;
+    clearInterval(resendTimer);
+    resendTimer = setInterval(() => {
+      left--;
+      if (left <= 0) {
+        clearInterval(resendTimer);
+        rBtn.disabled = false;
+        rBtn.textContent = 'Resend my link';
+      } else {
+        rBtn.textContent = `Resend in ${left}s`;
+      }
+    }, 1000);
+  }
+
+  async function sendLink(isResend) {
     const email = document.getElementById('emailInput').value.trim();
     const btn = document.getElementById('sendBtn');
     if (!email || !email.includes('@')) { showMsg('loginMsg', 'Please enter a valid email address.', 'err'); return; }
@@ -127,8 +156,16 @@
       options: { emailRedirectTo: window.location.href }
     });
     btn.disabled = false; btn.textContent = 'Send my secure link';
-    if (error) { showMsg('loginMsg', error.message, 'err'); }
-    else { showMsg('loginMsg', 'Check your inbox — we just sent your secure link. Tap it to sign in.', 'ok'); }
+    if (error) {
+      showMsg('loginMsg', error.message, 'err');
+    } else {
+      showMsg('loginMsg', isResend
+        ? 'Done — we sent a fresh link. Please check your inbox again.'
+        : 'Check your inbox — we just sent your secure link. Tap it to sign in.', 'ok');
+      // Reveal the resend option and start a short cooldown so links aren't over-sent.
+      document.getElementById('resendRow').style.display = 'block';
+      startCooldown(30);
+    }
   }
 
   async function signOut() {
@@ -205,6 +242,18 @@
 
   // On load: are we already signed in (or just came back from the magic link)?
   (async () => {
+    // If the magic link failed or expired, Supabase returns an error in the URL.
+    const hash = window.location.hash || '';
+    if (hash.includes('error')) {
+      const expired = hash.includes('expired') || hash.includes('otp_expired');
+      showMsg('loginMsg', expired
+        ? 'That link has expired. Enter your email below and we\u2019ll send you a fresh one.'
+        : 'That link could not be used. Enter your email below to get a new one.', 'info');
+      document.getElementById('resendRow').style.display = 'block';
+      // Clean the error out of the address bar so it doesn't linger.
+      history.replaceState(null, '', window.location.pathname);
+    }
+
     const { data: { session } } = await sb.auth.getSession();
     if (session) { loadDashboard(session); }
     sb.auth.onAuthStateChange((event, session) => {
