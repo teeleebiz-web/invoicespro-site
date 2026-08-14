@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — InvoicePro & BizHQ</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --clay: #C4622D; --clay-pale: #FFD4B8; --clay-light: #E8A87C;
+      --cream: #FFFBF5; --card: #FFF8F0; --card-alt: #FFF0E0;
+      --border: #E8D4BC; --border-light: #F0DCC8;
+      --text-dark: #2D1B0E; --text-mid: #8B4A20; --text-mute: #9B8574;
+      --white: #FFFFFF;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cream); color: var(--text-dark); line-height: 1.6; }
+    nav { position: sticky; top: 0; z-index: 100; background: var(--cream); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { display: flex; align-items: baseline; gap: 1px; text-decoration: none; }
+    .logo-invoice { font-size: 20px; font-weight: 800; color: var(--text-dark); }
+    .logo-pro { font-size: 20px; font-weight: 800; color: var(--clay); font-style: italic; }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { text-decoration: none; font-size: 14px; color: var(--text-mid); font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--clay); }
+    .nav-cta { background: var(--clay); color: var(--white); padding: 9px 22px; border-radius: 22px; text-decoration: none; font-size: 14px; font-weight: 700; }
+    .page-hero { background: var(--clay); padding: 64px 32px 56px; text-align: center; }
+    .page-hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; color: var(--white); margin-bottom: 12px; }
+    .page-hero p { font-size: 15px; color: var(--clay-pale); }
+    .doc { max-width: 780px; margin: 0 auto; padding: 64px 32px 84px; }
+    .doc .intro { font-size: 17px; color: var(--text-mute); margin-bottom: 44px; line-height: 1.7; }
+    .doc h2 { font-size: 20px; font-weight: 800; color: var(--text-dark); margin: 36px 0 12px; }
+    .doc p { font-size: 15px; color: var(--text-mid); margin-bottom: 14px; line-height: 1.75; }
+    .doc ul { margin: 0 0 16px 22px; }
+    .doc ul li { font-size: 15px; color: var(--text-mid); margin-bottom: 8px; line-height: 1.7; }
+    .doc a { color: var(--clay); text-decoration: none; font-weight: 600; }
+    .doc a:hover { text-decoration: underline; }
+    .back { display: inline-block; margin-top: 40px; background: var(--clay); color: var(--white); padding: 12px 28px; border-radius: 24px; text-decoration: none; font-size: 14px; font-weight: 700; }
+    footer { background: var(--text-dark); padding: 40px 32px; text-align: center; }
+    footer p { font-size: 12px; color: var(--text-mute); }
+    @media (max-width: 700px) {
+      nav { padding: 12px 16px; } .nav-links { gap: 16px; }
+      .nav-links a:not(.nav-cta) { display: none; }
+      .doc { padding: 48px 20px 64px; }
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-invoice">Invoice</span><span class="logo-pro">Pro</span></a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a><a href="index.html#pricing">Pricing</a>
+    <a href="index.html#contact">Contact</a>
+    <a href="index.html#pricing" class="nav-cta">Start Free</a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>Privacy Policy</h1>
+  <p>Last updated: August 2026</p>
+</div>
+
+<div class="doc">
+  <p class="intro">This Privacy Policy explains how InvoicePro and BizHQ ("we," "our," or "us") collect, use, and protect your information when you use our apps and website. We keep this in plain language, because you deserve to actually understand it.</p>
+
+  <h2>Information We Collect</h2>
+  <p>We collect information you provide directly when you create an account and use the app, including your name, email address, business details, and the client, invoice, proposal, contract, and document information you enter. We also collect basic usage information to keep the app running smoothly.</p>
+
+  <h2>How We Use Your Information</h2>
+  <p>We use your information to provide the service — creating and sending invoices, managing clients, generating proposals and contracts, processing payments, sending reminders and receipts, and powering the AI assistant. We do not sell your personal information to anyone.</p>
+
+  <h2>Third-Party Services</h2>
+  <p>We rely on trusted providers to deliver parts of the service:</p>
+  <ul>
+    <li><strong>Supabase</strong> — secure database and account storage.</li>
+    <li><strong>Stripe</strong> — payment processing. Your payment card details are handled directly by Stripe and never stored on our servers.</li>
+    <li><strong>Resend</strong> — sending emails such as reminders and receipts.</li>
+    <li><strong>Anthropic</strong> — powering the AI assistant.</li>
+    <li><strong>BoldSign</strong> — electronic signatures on contracts.</li>
+  </ul>
+  <p>Each provider handles your data under their own security and privacy standards.</p>
+
+  <h2>AI Data Handling</h2>
+  <p>When you use the AI assistant, the relevant business information needed to answer your request is processed to generate a response. This is used only to serve your request — not to train outside models on your private business data.</p>
+
+  <h2>Data Retention</h2>
+  <p>We keep your data for as long as your account is active. If you close your account, your data is retained for 30 days and then permanently deleted.</p>
+
+  <h2>Your Rights</h2>
+  <p>You can access, update, or delete your information at any time from within the app. If you need help, contact us and we will assist you.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this Privacy Policy? Email us at <a href="mailto:support@invoicespro.org">support@invoicespro.org</a>.</p>
+
+  <a href="index.html" class="back">← Back to Home</a>
+</div>
+
+<footer><p>&copy; 2026 InvoicesPro. All rights reserved.</p></footer>
+</body>
+</html>
