@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -67,14 +67,17 @@
 <body>
 
 <div class="topbar">
-  <div class="brand">Biz<span>HQ</span> Portal</div>
+  <div class="brand" id="ownerBrand">
+    <img id="ownerLogo" style="display:none;height:34px;width:auto;border-radius:8px;margin-right:10px;vertical-align:middle;" />
+    <span id="ownerName">Client Portal</span>
+  </div>
   <button class="signout" id="signoutBtn" style="display:none;" onclick="signOut()">Sign out</button>
 </div>
 
 <div class="login-wrap" id="loginView">
   <div class="login-card">
     <div id="stepEmail">
-      <h1>Your Client Portal</h1>
+      <h1>Your Client Portal (v4)</h1>
       <p>Enter your email and we'll send you a code to view your invoices, proposals, and contracts.</p>
       <input type="email" id="emailInput" placeholder="you@email.com" autocomplete="email" />
       <button class="primary" id="sendBtn" onclick="sendCode()">Send my code</button>
@@ -219,6 +222,27 @@
     document.getElementById('dashView').style.display = 'block';
     document.getElementById('signoutBtn').style.display = 'inline-block';
 
+    // Ensure this client is linked to their account (works regardless of signup order).
+    // Uses direct table read/write (proven reliable) instead of an RPC call.
+    try {
+      var existingLink = await sb.from('bp_portal_access').select('client_id').limit(1);
+      if (!existingLink.data || existingLink.data.length === 0) {
+        var matchClient = await sb.from('bp_clients').select('id, user_id').ilike('email', session.user.email).limit(1);
+        if (matchClient.data && matchClient.data.length > 0) {
+          var mc = matchClient.data[0];
+          await sb.from('bp_portal_access').insert({
+            auth_user_id: session.user.id,
+            client_id: mc.id,
+            owner_user_id: mc.user_id,
+            email: session.user.email,
+            last_login_at: new Date().toISOString(),
+          });
+        }
+      } else {
+        await sb.from('bp_portal_access').update({ last_login_at: new Date().toISOString() }).eq('auth_user_id', session.user.id);
+      }
+    } catch (e) { /* linking is best-effort */ }
+
     var accessRes = await sb.from('bp_portal_access').select('client_id, email').limit(1);
     var access = accessRes.data;
     var clientName = session.user.email;
@@ -227,6 +251,25 @@
       if (clientRes.data && clientRes.data.length && clientRes.data[0].name) clientName = clientRes.data[0].name;
     }
     document.getElementById('greetName').textContent = 'Welcome, ' + clientName;
+
+    // Load the owner's branding (business name + logo) for a professional, branded portal.
+    try {
+      // Get owner id directly from the portal-access row (independent of the access var above).
+      var ownerRes = await sb.from('bp_portal_access').select('owner_user_id').limit(1);
+      var ownerId = (ownerRes.data && ownerRes.data.length) ? ownerRes.data[0].owner_user_id : null;
+      if (ownerId) {
+        var brandRes = await sb.from('owner_branding').select('business_name, logo_url').eq('user_id', ownerId).limit(1);
+        if (brandRes.data && brandRes.data.length) {
+          var brand = brandRes.data[0];
+          if (brand.business_name) { document.getElementById('ownerName').textContent = brand.business_name; }
+          if (brand.logo_url) {
+            var img = document.getElementById('ownerLogo');
+            img.src = brand.logo_url;
+            img.style.display = 'inline-block';
+          }
+        }
+      }
+    } catch (e) { /* branding is optional; ignore errors */ }
 
     var invRes = await sb.from('bp_invoices').select('*').order('created_at', { ascending: false });
     renderList('panel-invoices', invRes.data, function (inv) {
@@ -251,6 +294,7 @@
     }, 'No contracts yet.');
   }
 
+  // If already signed in from a previous visit, go straight to the dashboard.
   (async function () {
     var sessRes = await sb.auth.getSession();
     if (sessRes.data.session) { loadDashboard(sessRes.data.session); }
