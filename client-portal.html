@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Portal - BizHQ</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --clay: #C4622D; --clay-pale: #FFD4B8; --clay-light: #E8A87C;
+      --cream: #FFFBF5; --card: #FFF8F0; --card-alt: #FFF0E0;
+      --border: #E8D4BC; --border-light: #F0DCC8;
+      --text-dark: #2D1B0E; --text-mid: #8B4A20; --text-mute: #9B8574;
+      --white: #FFFFFF; --green: #2E7D52; --amber: #B8860B; --red: #B23A2E;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cream); color: var(--text-dark); line-height: 1.6; min-height: 100vh; }
+    .topbar { background: var(--cream); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .brand { font-size: 20px; font-weight: 800; color: var(--text-dark); }
+    .brand span { color: var(--clay); font-style: italic; }
+    .signout { background: none; border: 1px solid var(--border); color: var(--text-mid); padding: 7px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .signout:hover { background: var(--card-alt); }
+    .login-wrap { max-width: 440px; margin: 0 auto; padding: 72px 24px; text-align: center; }
+    .login-card { background: var(--white); border: 1px solid var(--border); border-radius: 20px; padding: 40px 32px; box-shadow: 0 8px 30px rgba(196,98,45,0.08); }
+    .login-card h1 { font-size: 26px; font-weight: 800; color: var(--text-dark); margin-bottom: 8px; }
+    .login-card p { font-size: 15px; color: var(--text-mute); margin-bottom: 28px; }
+    .login-card input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 15px; margin-bottom: 14px; outline: none; }
+    .login-card input:focus { border-color: var(--clay); }
+    .login-card input.code-input { text-align: center; font-size: 16px; letter-spacing: 3px; font-weight: 600; }
+    .login-card button.primary { width: 100%; background: var(--clay); color: var(--white); border: none; padding: 14px; border-radius: 24px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .login-card button.primary:hover { background: #A8521F; }
+    .login-card button.primary:disabled { opacity: 0.6; cursor: default; }
+    .msg { font-size: 14px; margin-top: 18px; padding: 12px; border-radius: 10px; display: none; }
+    .msg.show { display: block; }
+    .msg.ok { background: #E8F5EC; color: var(--green); }
+    .msg.err { background: #FBEAE8; color: var(--red); }
+    .msg.info { background: var(--card-alt); color: var(--text-mid); }
+    .link-btn { background: none; border: none; color: var(--clay); font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 16px; text-decoration: underline; }
+    .link-btn:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+    .dash { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; display: none; }
+    .greet { margin-bottom: 24px; }
+    .greet h2 { font-size: 24px; font-weight: 800; color: var(--text-dark); }
+    .greet p { font-size: 14px; color: var(--text-mute); }
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .tab { background: none; border: none; padding: 12px 18px; font-size: 15px; font-weight: 600; color: var(--text-mute); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+    .tab.active { color: var(--clay); border-bottom-color: var(--clay); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .item { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .item-main { flex: 1; }
+    .item-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin-bottom: 3px; }
+    .item-sub { font-size: 13px; color: var(--text-mute); }
+    .item-right { text-align: right; }
+    .item-amount { font-size: 17px; font-weight: 800; color: var(--text-dark); }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px; margin-top: 4px; letter-spacing: 0.3px; }
+    .badge.paid, .badge.signed, .badge.accepted { background: #E8F5EC; color: var(--green); }
+    .badge.pending, .badge.sent, .badge.awaiting { background: #FCF3E0; color: var(--amber); }
+    .badge.overdue, .badge.declined { background: #FBEAE8; color: var(--red); }
+    .empty { text-align: center; padding: 48px 20px; color: var(--text-mute); font-size: 15px; }
+    .loading { text-align: center; padding: 48px; color: var(--text-mute); }
+    .footer-note { text-align: center; font-size: 12px; color: var(--text-mute); margin-top: 32px; }
+    @media (max-width: 600px) {
+      .item { flex-direction: column; align-items: flex-start; }
+      .item-right { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand" id="ownerBrand">
+    <img id="ownerLogo" style="display:none;height:34px;width:auto;border-radius:8px;margin-right:10px;vertical-align:middle;" />
+    <span id="ownerName">Client Portal</span>
+  </div>
+  <button class="signout" id="signoutBtn" style="display:none;" onclick="signOut()">Sign out</button>
+</div>
+
+<div class="login-wrap" id="loginView">
+  <div class="login-card">
+    <div id="stepEmail">
+      <h1>Your Client Portal (v4)</h1>
+      <p>Enter your email and we'll send you a code to view your invoices, proposals, and contracts.</p>
+      <input type="email" id="emailInput" placeholder="you@email.com" autocomplete="email" />
+      <button class="primary" id="sendBtn" onclick="sendCode()">Send my code</button>
+    </div>
+    <div id="stepCode" style="display:none;">
+      <h1>Enter your code</h1>
+      <p>We emailed a code to <span id="sentTo"></span>. Type it below to sign in.</p>
+      <input type="text" id="codeInput" class="code-input" placeholder="Enter code" inputmode="numeric" maxlength="10" autocomplete="one-time-code" />
+      <button class="primary" id="verifyBtn" onclick="verifyCode()">Sign in</button>
+      <button class="link-btn" id="resendBtn" onclick="sendCode(true)">Didn't get it? Resend code</button>
+      <br>
+      <button class="link-btn" onclick="backToEmail()">Use a different email</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+  <p class="footer-note">No password needed. The code goes straight to your inbox.</p>
+</div>
+
+<div class="dash" id="dashView">
+  <div class="greet">
+    <h2 id="greetName">Welcome</h2>
+    <p>Here's everything on your account.</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('invoices', this)">Invoices</button>
+    <button class="tab" onclick="showTab('proposals', this)">Proposals</button>
+    <button class="tab" onclick="showTab('contracts', this)">Contracts</button>
+  </div>
+  <div class="panel active" id="panel-invoices"><div class="loading">Loading...</div></div>
+  <div class="panel" id="panel-proposals"><div class="loading">Loading...</div></div>
+  <div class="panel" id="panel-contracts"><div class="loading">Loading...</div></div>
+  <p class="footer-note">You're viewing a secure, read-only summary of your account.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  var SUPABASE_URL = "https://bbdlhioqdlgnwbdpejvj.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_DfjE01Z0R9qjUxLK3wpgqQ_cf1w7xXI";
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
+
+  var currentEmail = '';
+  var resendTimer = null;
+
+  function money(n) { return (n === null || n === undefined || n === '') ? '' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''; }
+
+  function showMsg(text, kind) {
+    var el = document.getElementById('loginMsg');
+    el.textContent = text;
+    el.className = 'msg show ' + kind;
+  }
+  function clearMsg() {
+    var el = document.getElementById('loginMsg');
+    el.className = 'msg';
+  }
+
+  function startResendCooldown(seconds) {
+    var rBtn = document.getElementById('resendBtn');
+    var left = seconds;
+    rBtn.disabled = true;
+    rBtn.textContent = 'Resend code in ' + left + 's';
+    clearInterval(resendTimer);
+    resendTimer = setInterval(function () {
+      left--;
+      if (left <= 0) {
+        clearInterval(resendTimer);
+        rBtn.disabled = false;
+        rBtn.textContent = 'Didn\u2019t get it? Resend code';
+      } else {
+        rBtn.textContent = 'Resend code in ' + left + 's';
+      }
+    }, 1000);
+  }
+
+  async function sendCode(isResend) {
+    var email = document.getElementById('emailInput').value.trim();
+    if (isResend) { email = currentEmail; }
+    var btn = document.getElementById('sendBtn');
+    if (!email || !email.includes('@')) { showMsg('Please enter a valid email address.', 'err'); return; }
+    if (!isResend) { btn.disabled = true; btn.textContent = 'Sending...'; }
+    var res = await sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: true } });
+    if (!isResend) { btn.disabled = false; btn.textContent = 'Send my code'; }
+    if (res.error) {
+      showMsg(res.error.message, 'err');
+    } else {
+      currentEmail = email;
+      document.getElementById('sentTo').textContent = email;
+      document.getElementById('stepEmail').style.display = 'none';
+      document.getElementById('stepCode').style.display = 'block';
+      showMsg(isResend ? 'A fresh code is on its way. Check your inbox.' : 'Check your inbox for your code. It can take a minute.', 'ok');
+      startResendCooldown(30);
+      document.getElementById('codeInput').focus();
+    }
+  }
+
+  async function verifyCode() {
+    var code = document.getElementById('codeInput').value.trim();
+    var btn = document.getElementById('verifyBtn');
+    if (!code || code.length < 4) { showMsg('Enter the code from your email.', 'err'); return; }
+    btn.disabled = true; btn.textContent = 'Signing in...';
+    var res = await sb.auth.verifyOtp({ email: currentEmail, token: code, type: 'email' });
+    btn.disabled = false; btn.textContent = 'Sign in';
+    if (res.error) {
+      showMsg('That code did not work. Check it and try again, or resend a new one.', 'err');
+    } else if (res.data && res.data.session) {
+      clearMsg();
+      loadDashboard(res.data.session);
+    }
+  }
+
+  function backToEmail() {
+    document.getElementById('stepCode').style.display = 'none';
+    document.getElementById('stepEmail').style.display = 'block';
+    document.getElementById('codeInput').value = '';
+    clearMsg();
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.reload();
+  }
+
+  function showTab(name, btn) {
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) { tabs[i].classList.remove('active'); }
+    var panels = document.querySelectorAll('.panel');
+    for (var j = 0; j < panels.length; j++) { panels[j].classList.remove('active'); }
+    btn.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function renderList(panelId, items, renderRow, emptyText) {
+    var panel = document.getElementById(panelId);
+    if (!items || items.length === 0) { panel.innerHTML = '<div class="empty">' + emptyText + '</div>'; return; }
+    panel.innerHTML = items.map(renderRow).join('');
+  }
+
+  async function loadDashboard(session) {
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('dashView').style.display = 'block';
+    document.getElementById('signoutBtn').style.display = 'inline-block';
+
+    // Ensure this client is linked to their account (works regardless of signup order).
+    // Uses direct table read/write (proven reliable) instead of an RPC call.
+    try {
+      var existingLink = await sb.from('bp_portal_access').select('client_id').limit(1);
+      if (!existingLink.data || existingLink.data.length === 0) {
+        var matchClient = await sb.from('bp_clients').select('id, user_id').ilike('email', session.user.email).limit(1);
+        if (matchClient.data && matchClient.data.length > 0) {
+          var mc = matchClient.data[0];
+          await sb.from('bp_portal_access').insert({
+            auth_user_id: session.user.id,
+            client_id: mc.id,
+            owner_user_id: mc.user_id,
+            email: session.user.email,
+            last_login_at: new Date().toISOString(),
+          });
+        }
+      } else {
+        await sb.from('bp_portal_access').update({ last_login_at: new Date().toISOString() }).eq('auth_user_id', session.user.id);
+      }
+    } catch (e) { /* linking is best-effort */ }
+
+    var accessRes = await sb.from('bp_portal_access').select('client_id, email').limit(1);
+    var access = accessRes.data;
+    var clientName = session.user.email;
+    if (access && access.length) {
+      var clientRes = await sb.from('bp_clients').select('name').eq('id', access[0].client_id).limit(1);
+      if (clientRes.data && clientRes.data.length && clientRes.data[0].name) clientName = clientRes.data[0].name;
+    }
+    document.getElementById('greetName').textContent = 'Welcome, ' + clientName;
+
+    // Load the owner's branding (business name + logo) for a professional, branded portal.
+    try {
+      // Get owner id directly from the portal-access row (independent of the access var above).
+      var ownerRes = await sb.from('bp_portal_access').select('owner_user_id').limit(1);
+      var ownerId = (ownerRes.data && ownerRes.data.length) ? ownerRes.data[0].owner_user_id : null;
+      if (ownerId) {
+        var brandRes = await sb.from('owner_branding').select('business_name, logo_url').eq('user_id', ownerId).limit(1);
+        if (brandRes.data && brandRes.data.length) {
+          var brand = brandRes.data[0];
+          if (brand.business_name) { document.getElementById('ownerName').textContent = brand.business_name; }
+          if (brand.logo_url) {
+            var img = document.getElementById('ownerLogo');
+            img.src = brand.logo_url;
+            img.style.display = 'inline-block';
+          }
+        }
+      }
+    } catch (e) { /* branding is optional; ignore errors */ }
+
+    var invRes = await sb.from('bp_invoices').select('*').order('created_at', { ascending: false });
+    renderList('panel-invoices', invRes.data, function (inv) {
+      var status = (inv.status || 'pending').toLowerCase();
+      var amt = inv.total_due != null ? inv.total_due : (inv.amount != null ? inv.amount : inv.total);
+      var title = inv.invoice_number ? 'Invoice ' + inv.invoice_number : (inv.title || 'Invoice');
+      var sub = inv.due_date ? 'Due ' + fmtDate(inv.due_date) : fmtDate(inv.created_at);
+      return '<div class="item"><div class="item-main"><div class="item-title">' + title + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>';
+    }, 'No invoices yet.');
+
+    var propRes = await sb.from('bp_proposals').select('*').order('created_at', { ascending: false });
+    renderList('panel-proposals', propRes.data, function (p) {
+      var status = (p.status || 'sent').toLowerCase();
+      var sub = p.valid_until ? 'Valid until ' + fmtDate(p.valid_until) : fmtDate(p.created_at);
+      return '<div class="item"><div class="item-main"><div class="item-title">' + (p.title || 'Proposal') + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(p.amount) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>';
+    }, 'No proposals yet.');
+
+    var conRes = await sb.from('bp_contracts').select('*').order('created_at', { ascending: false });
+    renderList('panel-contracts', conRes.data, function (c) {
+      var status = (c.status || 'sent').toLowerCase();
+      return '<div class="item"><div class="item-main"><div class="item-title">' + (c.title || 'Contract') + '</div><div class="item-sub">' + fmtDate(c.created_at) + '</div></div><div class="item-right"><div class="item-amount">' + money(c.amount) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>';
+    }, 'No contracts yet.');
+  }
+
+  // If already signed in from a previous visit, go straight to the dashboard.
+  (async function () {
+    var sessRes = await sb.auth.getSession();
+    if (sessRes.data.session) { loadDashboard(sessRes.data.session); }
+  })();
+</script>
+</body>
+</html>
