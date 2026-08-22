@@ -55,7 +55,8 @@
     .badge.paid, .badge.signed, .badge.accepted { background: #E8F5EC; color: var(--green); }
     .badge.pending, .badge.sent, .badge.awaiting { background: #FCF3E0; color: var(--amber); }
     .badge.overdue, .badge.declined { background: #FBEAE8; color: var(--red); }
-    .pay-btn { background: var(--clay); color: var(--white); border: none; padding: 8px 16px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 6px; display: inline-block; }
+    .pay-wrap { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); text-align: right; }
+    .pay-btn { background: var(--clay); color: var(--white); border: none; padding: 9px 20px; border-radius: 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-block; }
     .pay-btn:hover { background: #A8521F; }
     .pay-btn:disabled { opacity: 0.6; cursor: default; }
     .empty { text-align: center; padding: 48px 20px; color: var(--text-mute); font-size: 15px; }
@@ -310,8 +311,8 @@
       var amt = inv.total_due != null ? inv.total_due : (inv.amount != null ? inv.amount : inv.total);
       var title = inv.invoice_number ? 'Invoice ' + inv.invoice_number : (inv.title || 'Invoice');
       var sub = inv.due_date ? 'Due ' + fmtDate(inv.due_date) : fmtDate(inv.created_at);
-      var payBtn = (status === 'pending' && amt) ? '<button class="pay-btn" onclick="payNow(\'' + inv.id + '\', ' + amt + ', this)">Pay Now</button>' : '';
-      return '<div class="item"><div class="item-main"><div class="item-title">' + title + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span>' + payBtn + '</div></div>';
+      var payBtn = (status === 'pending' && amt) ? '<div class="pay-wrap"><button class="pay-btn" onclick="payNow(\'' + inv.id + '\', ' + amt + ', this)">Pay Now</button></div>' : '';
+      return '<div class="item" style="flex-direction:column;align-items:stretch;"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px;"><div class="item-main"><div class="item-title">' + title + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>' + payBtn + '</div>';
     }, 'No invoices yet.');
 
     var propRes = await sb.from('bp_proposals').select('*').order('created_at', { ascending: false });
