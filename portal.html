@@ -55,6 +55,9 @@
     .badge.paid, .badge.signed, .badge.accepted { background: #E8F5EC; color: var(--green); }
     .badge.pending, .badge.sent, .badge.awaiting { background: #FCF3E0; color: var(--amber); }
     .badge.overdue, .badge.declined { background: #FBEAE8; color: var(--red); }
+    .pay-btn { background: var(--clay); color: var(--white); border: none; padding: 8px 16px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 6px; display: inline-block; }
+    .pay-btn:hover { background: #A8521F; }
+    .pay-btn:disabled { opacity: 0.6; cursor: default; }
     .empty { text-align: center; padding: 48px 20px; color: var(--text-mute); font-size: 15px; }
     .loading { text-align: center; padding: 48px; color: var(--text-mute); }
     .footer-note { text-align: center; font-size: 12px; color: var(--text-mute); margin-top: 32px; }
@@ -116,12 +119,14 @@
 <script>
   var SUPABASE_URL = "https://bbdlhioqdlgnwbdpejvj.supabase.co";
   var SUPABASE_KEY = "sb_publishable_DfjE01Z0R9qjUxLK3wpgqQ_cf1w7xXI";
+  var SWIFT_WORKER_URL = SUPABASE_URL + "/functions/v1/swift-worker";
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
   });
 
   var currentEmail = '';
   var resendTimer = null;
+  var currentClientName = 'Client';
 
   function money(n) { return (n === null || n === undefined || n === '') ? '' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''; }
@@ -217,6 +222,33 @@
     panel.innerHTML = items.map(renderRow).join('');
   }
 
+  // Generates a brand-new Stripe Checkout session at the moment of the click
+  // (never a stored/stale link), then redirects straight to it.
+  async function payNow(invoiceId, amount, btn) {
+    btn.disabled = true;
+    var originalText = btn.textContent;
+    btn.textContent = 'Preparing...';
+    try {
+      var res = await fetch(SWIFT_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+        body: JSON.stringify({ invoiceId: invoiceId, clientName: currentClientName, amount: amount }),
+      });
+      var data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        alert('Could not start checkout. Please try again in a moment.');
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+      alert('Could not start checkout. Please check your connection and try again.');
+    }
+  }
+
   async function loadDashboard(session) {
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('dashView').style.display = 'block';
@@ -251,6 +283,7 @@
       if (clientRes.data && clientRes.data.length && clientRes.data[0].name) clientName = clientRes.data[0].name;
     }
     document.getElementById('greetName').textContent = 'Welcome, ' + clientName;
+    currentClientName = clientName;
 
     // Load the owner's branding (business name + logo) for a professional, branded portal.
     try {
@@ -277,7 +310,8 @@
       var amt = inv.total_due != null ? inv.total_due : (inv.amount != null ? inv.amount : inv.total);
       var title = inv.invoice_number ? 'Invoice ' + inv.invoice_number : (inv.title || 'Invoice');
       var sub = inv.due_date ? 'Due ' + fmtDate(inv.due_date) : fmtDate(inv.created_at);
-      return '<div class="item"><div class="item-main"><div class="item-title">' + title + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>';
+      var payBtn = (status === 'pending' && amt) ? '<button class="pay-btn" onclick="payNow(\'' + inv.id + '\', ' + amt + ', this)">Pay Now</button>' : '';
+      return '<div class="item"><div class="item-main"><div class="item-title">' + title + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span>' + payBtn + '</div></div>';
     }, 'No invoices yet.');
 
     var propRes = await sb.from('bp_proposals').select('*').order('created_at', { ascending: false });
