@@ -256,24 +256,13 @@
     document.getElementById('signoutBtn').style.display = 'inline-block';
 
     // Ensure this client is linked to their account (works regardless of signup order).
-    // Uses direct table read/write (proven reliable) instead of an RPC call.
+    // Calls the backend function ensure_portal_link(), which finds the client record
+    // matching this login email and creates the link. A direct table lookup cannot do
+    // this for a real client: security rules hide the owner's client list until the
+    // client is already linked.
     try {
-      var existingLink = await sb.from('bp_portal_access').select('client_id').limit(1);
-      if (!existingLink.data || existingLink.data.length === 0) {
-        var matchClient = await sb.from('bp_clients').select('id, user_id').ilike('email', session.user.email).limit(1);
-        if (matchClient.data && matchClient.data.length > 0) {
-          var mc = matchClient.data[0];
-          await sb.from('bp_portal_access').insert({
-            auth_user_id: session.user.id,
-            client_id: mc.id,
-            owner_user_id: mc.user_id,
-            email: session.user.email,
-            last_login_at: new Date().toISOString(),
-          });
-        }
-      } else {
-        await sb.from('bp_portal_access').update({ last_login_at: new Date().toISOString() }).eq('auth_user_id', session.user.id);
-      }
+      var linkRes = await sb.rpc('ensure_portal_link');
+      if (linkRes.error) { console.error('ensure_portal_link failed:', linkRes.error.message); }
     } catch (e) { /* linking is best-effort */ }
 
     var accessRes = await sb.from('bp_portal_access').select('client_id, email').limit(1);
