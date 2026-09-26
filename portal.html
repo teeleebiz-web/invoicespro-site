@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Client Portal - BizHQ</title>
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }a
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --clay: #C4622D; --clay-pale: #FFD4B8; --clay-light: #E8A87C;
       --cream: #FFFBF5; --card: #FFF8F0; --card-alt: #FFF0E0;
@@ -59,6 +59,28 @@
     .pay-btn { background: var(--clay); color: var(--white); border: none; padding: 9px 20px; border-radius: 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-block; }
     .pay-btn:hover { background: #A8521F; }
     .pay-btn:disabled { opacity: 0.6; cursor: default; }
+    .item.clickable { cursor: pointer; }
+    .item.clickable:hover { border-color: var(--clay-light); }
+    .view-hint { font-size: 12px; color: var(--clay); font-weight: 700; margin-top: 4px; }
+    .detail { display: none; }
+    .back-btn { background: none; border: none; color: var(--clay); font-size: 14px; font-weight: 700; cursor: pointer; padding: 0; margin-bottom: 18px; }
+    .detail-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+    .detail-title { font-size: 22px; font-weight: 800; color: var(--text-dark); line-height: 1.3; }
+    .detail-meta { font-size: 13px; color: var(--text-mute); margin-top: 4px; }
+    .detail-amount { font-size: 28px; font-weight: 800; color: var(--text-dark); text-align: right; }
+    .detail-section { border-top: 1px solid var(--border-light); padding-top: 16px; margin-top: 16px; }
+    .detail-label { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; color: var(--text-mute); margin-bottom: 8px; }
+    .detail-text { font-size: 15px; color: var(--text-dark); white-space: pre-wrap; }
+    .li-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .li-table th { text-align: left; font-size: 11px; color: var(--text-mute); font-weight: 700; padding: 6px 4px; border-bottom: 1px solid var(--border-light); }
+    .li-table td { padding: 10px 4px; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+    .li-table .num { text-align: right; white-space: nowrap; }
+    .totals { margin-top: 12px; font-size: 14px; }
+    .totals div { display: flex; justify-content: space-between; padding: 4px 0; }
+    .totals .grand { font-size: 17px; font-weight: 800; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; }
+    .detail .pay-wrap { text-align: center; border-top: none; margin-top: 20px; }
+    .detail .pay-btn { padding: 13px 34px; font-size: 15px; border-radius: 24px; }
     .empty { text-align: center; padding: 48px 20px; color: var(--text-mute); font-size: 15px; }
     .loading { text-align: center; padding: 48px; color: var(--text-mute); }
     .footer-note { text-align: center; font-size: 12px; color: var(--text-mute); margin-top: 32px; }
@@ -113,6 +135,10 @@
   <div class="panel active" id="panel-invoices"><div class="loading">Loading...</div></div>
   <div class="panel" id="panel-proposals"><div class="loading">Loading...</div></div>
   <div class="panel" id="panel-contracts"><div class="loading">Loading...</div></div>
+  <div class="detail" id="detailView">
+    <button class="back-btn" onclick="closeDetail()">&larr; Back to your account</button>
+    <div class="detail-card" id="detailBody"></div>
+  </div>
   <p class="footer-note">You're viewing a secure, read-only summary of your account.</p>
 </div>
 
@@ -130,7 +156,12 @@
   var currentClientName = 'Client';
 
   function money(n) { return (n === null || n === undefined || n === '') ? '' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''; }
+  function fmtDate(d) {
+    if (!d) return '';
+    // Date-only values (YYYY-MM-DD) are read as local dates so they don't shift back a day.
+    var dt = /^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? new Date(d + 'T00:00:00') : new Date(d);
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
 
   function showMsg(text, kind) {
     var el = document.getElementById('loginMsg');
@@ -250,6 +281,85 @@
     }
   }
 
+  var portalData = { invoices: [], proposals: [], contracts: [] };
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function invAmount(inv) { return inv.total_due != null ? inv.total_due : (inv.amount != null ? inv.amount : inv.total); }
+  function isPayable(inv) { var st = (inv.status || 'pending').toLowerCase(); return (st === 'pending' || st === 'overdue') && invAmount(inv); }
+
+  function showListView(show) {
+    document.querySelector('.tabs').style.display = show ? '' : 'none';
+    document.querySelector('.greet').style.display = show ? '' : 'none';
+    var panels = document.querySelectorAll('.panel');
+    for (var i = 0; i < panels.length; i++) { panels[i].style.display = show ? '' : 'none'; }
+    document.getElementById('detailView').style.display = show ? 'none' : 'block';
+    window.scrollTo(0, 0);
+  }
+  function closeDetail() { showListView(true); }
+
+  async function openDetail(type, id) {
+    var list = portalData[type] || [];
+    var rec = null;
+    for (var i = 0; i < list.length; i++) { if (String(list[i].id) === String(id)) { rec = list[i]; break; } }
+    if (!rec) return;
+    var body = document.getElementById('detailBody');
+    body.innerHTML = '<div class="loading">Loading...</div>';
+    showListView(false);
+    var status = (rec.status || (type === 'invoices' ? 'pending' : 'sent')).toLowerCase();
+    var badge = '<span class="badge ' + esc(status) + '">' + esc(status.toUpperCase()) + '</span>';
+    var html = '';
+
+    if (type === 'invoices') {
+      var amt = invAmount(rec);
+      var title = rec.invoice_number ? 'Invoice ' + rec.invoice_number : (rec.title || 'Invoice');
+      var meta = [];
+      if (rec.due_date) meta.push('Due ' + fmtDate(rec.due_date));
+      if (rec.created_at) meta.push('Issued ' + fmtDate(rec.created_at));
+      if (rec.paid_at) meta.push('Paid ' + fmtDate(rec.paid_at));
+      html += '<div class="detail-head"><div><div class="detail-title">' + esc(title) + '</div><div class="detail-meta">' + esc(meta.join(' \u00b7 ')) + '</div></div><div><div class="detail-amount">' + money(amt) + '</div><div style="text-align:right;">' + badge + '</div></div></div>';
+      var liRes = await sb.from('bp_invoice_line_items').select('description, quantity, unit_price, amount').eq('invoice_id', rec.id).order('created_at', { ascending: true });
+      var items = liRes.data || [];
+      if (items.length) {
+        html += '<div class="detail-section"><div class="detail-label">ITEMS</div><table class="li-table"><tr><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Amount</th></tr>';
+        items.forEach(function (li) {
+          html += '<tr><td>' + esc(li.description || '') + '</td><td class="num">' + esc(li.quantity != null ? li.quantity : '') + '</td><td class="num">' + money(li.unit_price) + '</td><td class="num">' + money(li.amount) + '</td></tr>';
+        });
+        html += '</table></div>';
+      }
+      html += '<div class="totals">';
+      if (rec.subtotal != null) html += '<div><span>Subtotal</span><span>' + money(rec.subtotal) + '</span></div>';
+      if (rec.deposit_applied) html += '<div><span>Deposit applied</span><span>-' + money(rec.deposit_applied) + '</span></div>';
+      html += '<div class="grand"><span>' + (status === 'paid' ? 'Total paid' : 'Total due') + '</span><span>' + money(amt) + '</span></div></div>';
+      if (isPayable(rec)) {
+        html += '<div class="pay-wrap"><button class="pay-btn" onclick="payNow(\'' + esc(rec.id) + '\', ' + Number(amt) + ', this)">Pay Now</button></div>';
+      }
+    } else if (type === 'proposals') {
+      var pmeta = [];
+      if (rec.valid_until) pmeta.push('Valid until ' + fmtDate(rec.valid_until));
+      if (rec.created_at) pmeta.push('Sent ' + fmtDate(rec.sent_at || rec.created_at));
+      html += '<div class="detail-head"><div><div class="detail-title">' + esc(rec.title || 'Proposal') + '</div><div class="detail-meta">' + esc(pmeta.join(' \u00b7 ')) + '</div></div><div><div class="detail-amount">' + money(rec.amount) + '</div><div style="text-align:right;">' + badge + '</div></div></div>';
+      if (rec.deposit_amount) html += '<div class="totals"><div><span>Deposit to get started</span><span>' + money(rec.deposit_amount) + '</span></div></div>';
+      if (rec.description) html += '<div class="detail-section"><div class="detail-label">DETAILS</div><div class="detail-text">' + esc(rec.description) + '</div></div>';
+    } else {
+      var cmeta = [];
+      if (rec.start_date) cmeta.push('Starts ' + fmtDate(rec.start_date));
+      if (rec.end_date) cmeta.push('Ends ' + fmtDate(rec.end_date));
+      if (rec.signed_at) cmeta.push('Signed ' + fmtDate(rec.signed_at));
+      else if (rec.sent_at) cmeta.push('Sent ' + fmtDate(rec.sent_at));
+      html += '<div class="detail-head"><div><div class="detail-title">' + esc(rec.title || 'Contract') + '</div><div class="detail-meta">' + esc(cmeta.join(' \u00b7 ')) + '</div></div><div><div class="detail-amount">' + money(rec.amount) + '</div><div style="text-align:right;">' + badge + '</div></div></div>';
+      if (rec.deposit_amount) html += '<div class="totals"><div><span>Deposit</span><span>' + money(rec.deposit_amount) + '</span></div></div>';
+      if (rec.body) html += '<div class="detail-section"><div class="detail-label">CONTRACT TERMS</div><div class="detail-text">' + esc(rec.body) + '</div></div>';
+      if (rec.signed_document_url) {
+        html += '<div class="pay-wrap"><a class="pay-btn" style="text-decoration:none;" href="' + esc(rec.signed_document_url) + '" target="_blank" rel="noopener">View signed contract</a></div>';
+      } else if (rec.boldsign_signing_url && status !== 'signed') {
+        html += '<div class="pay-wrap"><a class="pay-btn" style="text-decoration:none;" href="' + esc(rec.boldsign_signing_url) + '" target="_blank" rel="noopener">Review and sign</a></div>';
+      }
+    }
+    body.innerHTML = html;
+  }
+
   async function loadDashboard(session) {
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('dashView').style.display = 'block';
@@ -294,27 +404,31 @@
       }
     } catch (e) { /* branding is optional; ignore errors */ }
 
-    var invRes = await sb.from('bp_invoices').select('*').order('created_at', { ascending: false });
-    renderList('panel-invoices', invRes.data, function (inv) {
+    // Only client-facing columns are requested (never the owner's private notes).
+    var invRes = await sb.from('bp_invoices').select('id, title, subtotal, deposit_applied, total_due, status, due_date, paid_at, created_at').order('created_at', { ascending: false });
+    portalData.invoices = invRes.data || [];
+    renderList('panel-invoices', portalData.invoices, function (inv) {
       var status = (inv.status || 'pending').toLowerCase();
-      var amt = inv.total_due != null ? inv.total_due : (inv.amount != null ? inv.amount : inv.total);
+      var amt = invAmount(inv);
       var title = inv.invoice_number ? 'Invoice ' + inv.invoice_number : (inv.title || 'Invoice');
       var sub = inv.due_date ? 'Due ' + fmtDate(inv.due_date) : fmtDate(inv.created_at);
-      var payBtn = (status === 'pending' && amt) ? '<div class="pay-wrap"><button class="pay-btn" onclick="payNow(\'' + inv.id + '\', ' + amt + ', this)">Pay Now</button></div>' : '';
-      return '<div class="item" style="flex-direction:column;align-items:stretch;"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px;"><div class="item-main"><div class="item-title">' + title + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>' + payBtn + '</div>';
+      var payBtn = isPayable(inv) ? '<div class="pay-wrap"><button class="pay-btn" onclick="event.stopPropagation(); payNow(\'' + esc(inv.id) + '\', ' + Number(amt) + ', this)">Pay Now</button></div>' : '';
+      return '<div class="item clickable" onclick="openDetail(\'invoices\', \'' + esc(inv.id) + '\')" style="flex-direction:column;align-items:stretch;"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px;"><div class="item-main"><div class="item-title">' + esc(title) + '</div><div class="item-sub">' + esc(sub) + '</div><div class="view-hint">View details &rsaquo;</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + esc(status) + '">' + esc(status.toUpperCase()) + '</span></div></div>' + payBtn + '</div>';
     }, 'No invoices yet.');
 
-    var propRes = await sb.from('bp_proposals').select('*').order('created_at', { ascending: false });
-    renderList('panel-proposals', propRes.data, function (p) {
+    var propRes = await sb.from('bp_proposals').select('id, title, description, amount, deposit_amount, valid_until, status, sent_at, created_at').order('created_at', { ascending: false });
+    portalData.proposals = propRes.data || [];
+    renderList('panel-proposals', portalData.proposals, function (p) {
       var status = (p.status || 'sent').toLowerCase();
       var sub = p.valid_until ? 'Valid until ' + fmtDate(p.valid_until) : fmtDate(p.created_at);
-      return '<div class="item"><div class="item-main"><div class="item-title">' + (p.title || 'Proposal') + '</div><div class="item-sub">' + sub + '</div></div><div class="item-right"><div class="item-amount">' + money(p.amount) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>';
+      return '<div class="item clickable" onclick="openDetail(\'proposals\', \'' + esc(p.id) + '\')"><div class="item-main"><div class="item-title">' + esc(p.title || 'Proposal') + '</div><div class="item-sub">' + esc(sub) + '</div><div class="view-hint">View details &rsaquo;</div></div><div class="item-right"><div class="item-amount">' + money(p.amount) + '</div><span class="badge ' + esc(status) + '">' + esc(status.toUpperCase()) + '</span></div></div>';
     }, 'No proposals yet.');
 
-    var conRes = await sb.from('bp_contracts').select('*').order('created_at', { ascending: false });
-    renderList('panel-contracts', conRes.data, function (c) {
+    var conRes = await sb.from('bp_contracts').select('id, title, body, amount, deposit_amount, start_date, end_date, status, boldsign_signing_url, sent_at, signed_at, signed_document_url, created_at').order('created_at', { ascending: false });
+    portalData.contracts = conRes.data || [];
+    renderList('panel-contracts', portalData.contracts, function (c) {
       var status = (c.status || 'sent').toLowerCase();
-      return '<div class="item"><div class="item-main"><div class="item-title">' + (c.title || 'Contract') + '</div><div class="item-sub">' + fmtDate(c.created_at) + '</div></div><div class="item-right"><div class="item-amount">' + money(c.amount) + '</div><span class="badge ' + status + '">' + status.toUpperCase() + '</span></div></div>';
+      return '<div class="item clickable" onclick="openDetail(\'contracts\', \'' + esc(c.id) + '\')"><div class="item-main"><div class="item-title">' + esc(c.title || 'Contract') + '</div><div class="item-sub">' + esc(fmtDate(c.created_at)) + '</div><div class="view-hint">View details &rsaquo;</div></div><div class="item-right"><div class="item-amount">' + money(c.amount) + '</div><span class="badge ' + esc(status) + '">' + esc(status.toUpperCase()) + '</span></div></div>';
     }, 'No contracts yet.');
   }
 
