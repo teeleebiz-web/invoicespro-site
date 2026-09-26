@@ -7,11 +7,11 @@
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --clay: #C4622D; --clay-pale: #FFD4B8; --clay-light: #E8A87C;
+      --clay: #6B7A2F; --clay-pale: #CBD798; --clay-light: #ACC05C;
       --cream: #FFFBF5; --card: #FFF8F0; --card-alt: #FFF0E0;
       --border: #E8D4BC; --border-light: #F0DCC8;
-      --text-dark: #2D1B0E; --text-mid: #8B4A20; --text-mute: #9B8574;
-      --white: #FFFFFF; --green: #2E7D52; --amber: #B8860B; --red: #B23A2E;
+      --text-dark: #2D1B0E; --text-mid: #5A4A3A; --text-mute: #6B5B4E;
+      --white: #FFFFFF; --green: #4A7A40; --amber: #E8A020; --red: #D94F2E;
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--cream); color: var(--text-dark); line-height: 1.6; min-height: 100vh; }
     .topbar { background: var(--cream); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
@@ -27,7 +27,7 @@
     .login-card input:focus { border-color: var(--clay); }
     .login-card input.code-input { text-align: center; font-size: 16px; letter-spacing: 3px; font-weight: 600; }
     .login-card button.primary { width: 100%; background: var(--clay); color: var(--white); border: none; padding: 14px; border-radius: 24px; font-size: 15px; font-weight: 700; cursor: pointer; }
-    .login-card button.primary:hover { background: #A8521F; }
+    .login-card button.primary:hover { background: #57642A; }
     .login-card button.primary:disabled { opacity: 0.6; cursor: default; }
     .msg { font-size: 14px; margin-top: 18px; padding: 12px; border-radius: 10px; display: none; }
     .msg.show { display: block; }
@@ -57,7 +57,7 @@
     .badge.overdue, .badge.declined { background: #FBEAE8; color: var(--red); }
     .pay-wrap { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light); text-align: right; }
     .pay-btn { background: var(--clay); color: var(--white); border: none; padding: 9px 20px; border-radius: 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-block; }
-    .pay-btn:hover { background: #A8521F; }
+    .pay-btn:hover { background: #57642A; }
     .pay-btn:disabled { opacity: 0.6; cursor: default; }
     .item.clickable { cursor: pointer; }
     .item.clickable:hover { border-color: var(--clay-light); }
@@ -103,7 +103,7 @@
 <div class="login-wrap" id="loginView">
   <div class="login-card">
     <div id="stepEmail">
-      <h1>Your Client Portal (v4)</h1>
+      <h1>Your Client Portal</h1>
       <p>Enter your email and we'll send you a code to view your invoices, proposals, and contracts.</p>
       <input type="email" id="emailInput" placeholder="you@email.com" autocomplete="email" />
       <button class="primary" id="sendBtn" onclick="sendCode()">Send my code</button>
