@@ -375,21 +375,27 @@
       if (linkRes.error) { console.error('ensure_portal_link failed:', linkRes.error.message); }
     } catch (e) { /* linking is best-effort */ }
 
-    var accessRes = await sb.from('bp_portal_access').select('client_id, email').limit(1);
-    var access = accessRes.data;
-    var clientName = session.user.email;
-    if (access && access.length) {
-      var clientRes = await sb.from('bp_clients').select('name').eq('id', access[0].client_id).limit(1);
-      if (clientRes.data && clientRes.data.length && clientRes.data[0].name) clientName = clientRes.data[0].name;
+    // Look up the portal-access row for THIS login only. Every query below is then
+    // filtered to that client explicitly, so scoping never depends on which security
+    // rule happens to match (e.g. a business owner signed in to test their own portal).
+    var accessRes = await sb.from('bp_portal_access').select('client_id, email, owner_user_id').eq('auth_user_id', session.user.id).limit(1);
+    var access = (accessRes.data && accessRes.data.length) ? accessRes.data[0] : null;
+    if (!access || !access.client_id) {
+      document.getElementById('greetName').textContent = 'Welcome';
+      var noAccount = '<div class="empty">We couldn’t find a client account linked to ' + esc(session.user.email) + '.<br>Please use the email address your invitation was sent to, or contact the business that invited you.</div>';
+      ['panel-invoices', 'panel-proposals', 'panel-contracts'].forEach(function (id) { document.getElementById(id).innerHTML = noAccount; });
+      return;
     }
+    var clientId = access.client_id;
+    var clientName = session.user.email;
+    var clientRes = await sb.from('bp_clients').select('name').eq('id', clientId).limit(1);
+    if (clientRes.data && clientRes.data.length && clientRes.data[0].name) clientName = clientRes.data[0].name;
     document.getElementById('greetName').textContent = 'Welcome, ' + clientName;
     currentClientName = clientName;
 
     // Load the owner's branding (business name + logo) for a professional, branded portal.
     try {
-      // Get owner id directly from the portal-access row (independent of the access var above).
-      var ownerRes = await sb.from('bp_portal_access').select('owner_user_id').limit(1);
-      var ownerId = (ownerRes.data && ownerRes.data.length) ? ownerRes.data[0].owner_user_id : null;
+      var ownerId = access.owner_user_id;
       if (ownerId) {
         var brandRes = await sb.from('owner_branding').select('business_name, logo_url').eq('user_id', ownerId).limit(1);
         if (brandRes.data && brandRes.data.length) {
@@ -405,7 +411,7 @@
     } catch (e) { /* branding is optional; ignore errors */ }
 
     // Only client-facing columns are requested (never the owner's private notes).
-    var invRes = await sb.from('bp_invoices').select('id, title, subtotal, deposit_applied, total_due, status, due_date, paid_at, created_at').order('created_at', { ascending: false });
+    var invRes = await sb.from('bp_invoices').select('id, title, subtotal, deposit_applied, total_due, status, due_date, paid_at, created_at').eq('client_id', clientId).order('created_at', { ascending: false });
     portalData.invoices = invRes.data || [];
     renderList('panel-invoices', portalData.invoices, function (inv) {
       var status = (inv.status || 'pending').toLowerCase();
@@ -416,7 +422,7 @@
       return '<div class="item clickable" onclick="openDetail(\'invoices\', \'' + esc(inv.id) + '\')" style="flex-direction:column;align-items:stretch;"><div style="display:flex;justify-content:space-between;align-items:center;gap:16px;"><div class="item-main"><div class="item-title">' + esc(title) + '</div><div class="item-sub">' + esc(sub) + '</div><div class="view-hint">View details &rsaquo;</div></div><div class="item-right"><div class="item-amount">' + money(amt) + '</div><span class="badge ' + esc(status) + '">' + esc(status.toUpperCase()) + '</span></div></div>' + payBtn + '</div>';
     }, 'No invoices yet.');
 
-    var propRes = await sb.from('bp_proposals').select('id, title, description, amount, deposit_amount, valid_until, status, sent_at, created_at').order('created_at', { ascending: false });
+    var propRes = await sb.from('bp_proposals').select('id, title, description, amount, deposit_amount, valid_until, status, sent_at, created_at').eq('client_id', clientId).order('created_at', { ascending: false });
     portalData.proposals = propRes.data || [];
     renderList('panel-proposals', portalData.proposals, function (p) {
       var status = (p.status || 'sent').toLowerCase();
@@ -424,7 +430,7 @@
       return '<div class="item clickable" onclick="openDetail(\'proposals\', \'' + esc(p.id) + '\')"><div class="item-main"><div class="item-title">' + esc(p.title || 'Proposal') + '</div><div class="item-sub">' + esc(sub) + '</div><div class="view-hint">View details &rsaquo;</div></div><div class="item-right"><div class="item-amount">' + money(p.amount) + '</div><span class="badge ' + esc(status) + '">' + esc(status.toUpperCase()) + '</span></div></div>';
     }, 'No proposals yet.');
 
-    var conRes = await sb.from('bp_contracts').select('id, title, body, amount, deposit_amount, start_date, end_date, status, boldsign_signing_url, sent_at, signed_at, signed_document_url, created_at').order('created_at', { ascending: false });
+    var conRes = await sb.from('bp_contracts').select('id, title, body, amount, deposit_amount, start_date, end_date, status, boldsign_signing_url, sent_at, signed_at, signed_document_url, created_at').eq('client_id', clientId).order('created_at', { ascending: false });
     portalData.contracts = conRes.data || [];
     renderList('panel-contracts', portalData.contracts, function (c) {
       var status = (c.status || 'sent').toLowerCase();
