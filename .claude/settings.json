@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__create_pull_request",
+      "mcp__github__merge_pull_request",
+      "Bash(curl *)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "The repository owner has authorized Claude to merge its own pull requests into main on teeleebiz-web/invoicespro-site after Claude has syntax-checked and browser-tested the change.",
+      "Fetching the live website after a merge to confirm the change deployed is authorized."
+    ]
+  }
+}
