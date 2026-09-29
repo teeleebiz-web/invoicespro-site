@@ -15,8 +15,9 @@
 5. **Say where things live.** Give the exact file, URL or screen path for every change.
 6. **Only hand Terrence steps Claude cannot do**, such as GitHub, Apple or Stripe account-owner actions or his own Windows PC. When that happens, give exact click-by-click steps, the next 2–3 steps together, and one clean copy-paste block with nothing extra in it.
 7. **Two strikes, new path.** If a route fails twice, stop and find a different route.
-8. **No Expo Go for BizHQ.** Terrence moved off it on purpose. Do not suggest it unless he raises it.
-9. **Customer-facing AI never gets autonomous write access to production.** Use human-in-the-loop escalation.
+8. **No `npm audit fix` / `npm install <pkg>` in the app folder.** Always use `npx expo install <pkg>`; plain npm pulls mismatched SDK versions (this caused the `ExpoAsset` crash).
+9. **No Expo Go for BizHQ.** Terrence moved off it on purpose. Do not suggest it unless he raises it.
+10. **Customer-facing AI never gets autonomous write access to production.** Use human-in-the-loop escalation.
 
 ---
 
@@ -55,6 +56,8 @@
 | 2026-09-29 | `.claude/settings.json` added to `main`, pre-approving Claude's PR merges and live-site checks on this repo | Commit `f183d1b`, JSON validated |
 | 2026-09-29 | **Old `client-portal.html` retired.** It was an unused duplicate with the same unfiltered data queries as the pre-fix portal. It now forwards to `portal.html`, so old links still work and the leaky code is gone. | Browser test: lands on portal sign-in, no errors |
 | 2026-09-29 | Inactive `claude/settings.json` (created without the dot) deleted | Same change |
+| 2026-09-29 | **Root cause of the `ExpoAsset` crash found and fixed on Terrence's PC.** `npx expo-doctor` showed (1) missing peer dependency `expo-asset` required by `expo-audio`, and (2) stray SDK-57 copies of `expo-asset`/`expo-constants` in `node_modules`. Fixed with `npx expo install expo-asset expo-constants` + `npx expo install --fix` → **18/18 checks passed**. Committed locally as `c112096`. Earlier builds used the old commit `c618051`; the three newest EAS builds use `c112096`. | expo-doctor output; EAS build list |
+| 2026-09-29 | Phone connection issue solved with `npx expo start --tunnel` (LAN on `192.168.50.225:8081` was unreachable) | "iOS Bundled" in Metro log |
 
 ---
 
@@ -65,7 +68,7 @@
 | 1 | **Add `CLAUDE.md`** with the working rules from Section 1, so every session loads them automatically | Next step. Claude does it. |
 | 4 | **Remove Edge Function `temp-stripe-mode-check`** (leftover diagnostic, still ACTIVE) | Supabase tools can't delete functions. Terrence clicks delete in the Supabase dashboard; Claude gives the exact steps. |
 | 5 | **Stray `App.js` in this public website repo** (older BizHQ app copy) | Recommend removing it from the website repo. Needs Terrence's yes. |
-| 6 | **Voice mic feature: `eas build --profile development --platform ios` fails.** The exact error was never captured. | Needs Claude running on Terrence's PC (Claude Desktop app, or `claude remote-control` in `C:\Users\teele\bizpilot`). Then Claude runs the build and reads the real error. |
+| 6 | **Voice mic feature: install the fixed dev build on the iPhone.** Build from commit `c112096` is ready on expo.dev (project `teebiz/bizpilot` → Builds → top entry). Check: run `npx expo start --tunnel`, scan QR; if no red `ExpoAsset` error, it's installed. If the error remains, install that build directly via Safari on the iPhone. | In progress |
 | 7 | **`OPENAI_API_KEY` Supabase secret** for `bizhq-transcribe` | Unconfirmed. Check with a test call after the build works. |
 | 8 | **Stripe is in LIVE mode.** Payment chain untested. | Terrence decides: small real charge, or a Stripe test key. |
 | 9 | `sms_suppressions` table has RLS enabled but no policy | Needs Terrence's direction. |
