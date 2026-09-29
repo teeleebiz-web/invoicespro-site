@@ -53,6 +53,8 @@
 | 2026-09-28 | `bizhq-transcribe` Edge Function (voice to text via Whisper) confirmed **deployed** (v1, requires login) | `list_edge_functions` |
 | 2026-09-28 | Claude GitHub App installed, so Claude can push to this repo | Push succeeded |
 | 2026-09-29 | `.claude/settings.json` added to `main`, pre-approving Claude's PR merges and live-site checks on this repo | Commit `f183d1b`, JSON validated |
+| 2026-09-29 | **Old `client-portal.html` retired.** It was an unused duplicate with the same unfiltered data queries as the pre-fix portal. It now forwards to `portal.html`, so old links still work and the leaky code is gone. | Browser test: lands on portal sign-in, no errors |
+| 2026-09-29 | Inactive `claude/settings.json` (created without the dot) deleted | Same change |
 
 ---
 
@@ -61,8 +63,6 @@
 | # | Item | Status / what's needed |
 |---|---|---|
 | 1 | **Add `CLAUDE.md`** with the working rules from Section 1, so every session loads them automatically | Next step. Claude does it. |
-| 2 | **`client-portal.html`** still has the old clay-brown palette (`--text-mid: #8B4A20`, `--text-mute: #9B8574`) | Convert to olive/gold, test at phone width, merge, confirm live. Claude does it. |
-| 3 | **Delete the leftover `claude/settings.json`** (created without the dot; inactive) | Claude does it. |
 | 4 | **Remove Edge Function `temp-stripe-mode-check`** (leftover diagnostic, still ACTIVE) | Supabase tools can't delete functions. Terrence clicks delete in the Supabase dashboard; Claude gives the exact steps. |
 | 5 | **Stray `App.js` in this public website repo** (older BizHQ app copy) | Recommend removing it from the website repo. Needs Terrence's yes. |
 | 6 | **Voice mic feature: `eas build --profile development --platform ios` fails.** The exact error was never captured. | Needs Claude running on Terrence's PC (Claude Desktop app, or `claude remote-control` in `C:\Users\teele\bizpilot`). Then Claude runs the build and reads the real error. |
@@ -84,4 +84,4 @@ continue the BizHQ plan
 1. Reads this file.
 2. Confirms `.claude/settings.json` loaded, meaning merges and live-site checks aren't blocked. If it didn't load, Claude says so plainly.
 3. Does open item #1: writes `CLAUDE.md`, commits it, pushes it and merges it.
-4. Does open items #2 and #3, verifies both are live, and updates this file's **Done** table.
+4. Works down the remaining open items in order, verifies each is live, and updates this file's **Done** table.
