@@ -58,6 +58,7 @@
 | 2026-09-29 | Inactive `claude/settings.json` (created without the dot) deleted | Same change |
 | 2026-09-29 | **Root cause of the `ExpoAsset` crash found and fixed on Terrence's PC.** `npx expo-doctor` showed (1) missing peer dependency `expo-asset` required by `expo-audio`, and (2) stray SDK-57 copies of `expo-asset`/`expo-constants` in `node_modules`. Fixed with `npx expo install expo-asset expo-constants` + `npx expo install --fix` → **18/18 checks passed**. Committed locally as `c112096`. Earlier builds used the old commit `c618051`; the three newest EAS builds use `c112096`. | expo-doctor output; EAS build list |
 | 2026-09-29 | Phone connection issue solved with `npx expo start --tunnel` (LAN on `192.168.50.225:8081` was unreachable) | "iOS Bundled" in Metro log |
+| 2026-09-29 | **Voice mic feature working end to end on iPhone.** Speech → text in BizHQ AI chat → AI reply shown and spoken. `bizhq-transcribe` returned 200 twice at 02:17 UTC, so `OPENAI_API_KEY` is set. | Terrence's test + Supabase function logs |
 
 ---
 
@@ -68,8 +69,6 @@
 | 1 | **Add `CLAUDE.md`** with the working rules from Section 1, so every session loads them automatically | Next step. Claude does it. |
 | 4 | **Remove Edge Function `temp-stripe-mode-check`** (leftover diagnostic, still ACTIVE) | Supabase tools can't delete functions. Terrence clicks delete in the Supabase dashboard; Claude gives the exact steps. |
 | 5 | **Stray `App.js` in this public website repo** (older BizHQ app copy) | Recommend removing it from the website repo. Needs Terrence's yes. |
-| 6 | **Voice mic feature: install the fixed dev build on the iPhone.** Build from commit `c112096` is ready on expo.dev (project `teebiz/bizpilot` → Builds → top entry). Check: run `npx expo start --tunnel`, scan QR; if no red `ExpoAsset` error, it's installed. If the error remains, install that build directly via Safari on the iPhone. | In progress |
-| 7 | **`OPENAI_API_KEY` Supabase secret** for `bizhq-transcribe` | Unconfirmed. Check with a test call after the build works. |
 | 8 | **Stripe is in LIVE mode.** Payment chain untested. | Terrence decides: small real charge, or a Stripe test key. |
 | 9 | `sms_suppressions` table has RLS enabled but no policy | Needs Terrence's direction. |
 | 10 | "Proposals label spacing" bug | Can't be seen in the code. Needs a screenshot from Terrence. |
